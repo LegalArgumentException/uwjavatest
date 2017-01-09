@@ -3,26 +3,44 @@ package com.tedneward.example;
 import java.beans.*;
 import java.util.*;
 
-public class Person implements Comparable<Person> {
-  private int age;
+class Person implements Comparable<Person> {
   private String name;
+  private int age;
   private double salary;
   private String ssn;
-  private boolean propertyChangeFired = false;
-  
-  public Person() {
-    this("", 0, 0.0d);
-  }
-  
-  public Person(String n, int a, double s) {
-    name = n;
-    age = a;
-    salary = s;
-    ssn = "";
+  private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+
+  public static class AgeComparator implements Comparator<Person> {
+    public int compare(Person p1, Person p2) {
+      return p1.age - p2.age;
+    }
   }
 
+  public Person(String name, int age, int salary, String ssn) {
+    this.name = name;
+    this.age = age;
+    this.salary = salary;
+    this.ssn = ssn;
+  }
+
+  public Person(String name, int age, int salary) {
+    this(name, age, salary, "");
+  }
+
+  public Person() {
+    this("", 0, 0, "");
+  }
+
+  public void addPropertyChangeListener(PropertyChangeListener listener) {
+        this.pcs.addPropertyChangeListener(listener);
+    }
+
+    public void removePropertyChangeListener(PropertyChangeListener listener) {
+        this.pcs.removePropertyChangeListener(listener);
+    }
+
   public void setAge(int newAge) {
-    if (newAge < 0) {
+    if (age < 0) {
       throw new IllegalArgumentException("Age cannot be less than zero");
     }
     int oldAge = this.age;
@@ -30,12 +48,15 @@ public class Person implements Comparable<Person> {
     pcs.firePropertyChange(new PropertyChangeEvent(this, "age", oldAge, newAge));
   }
 
-  public int getAge() {
+  public double getAge() {
+    if(this.age < 0) {
+      throw new IllegalArgumentException("Age is invalid value");
+    }
     return this.age;
   }
 
   public void setName(String newName) {
-    if(newName == null) {
+    if(name == null) {
       throw new IllegalArgumentException("Must enter a valid name");
     }
     String oldName = this.name;
@@ -48,7 +69,7 @@ public class Person implements Comparable<Person> {
   }
 
   public void setSalary(double newSalary) {
-    if(newSalary < 0) {
+    if(this.salary < 0) {
       throw new IllegalArgumentException("Salary cannot be less than zero");
     }
     double oldSalary = this.salary;
@@ -60,46 +81,42 @@ public class Person implements Comparable<Person> {
     return this.salary;
   }
 
-  public void setSSN(String value) {
-    String old = this.ssn;
-    ssn = value;
-    
-    this.pcs.firePropertyChange("ssn", old, value);
-    propertyChangeFired = true;
+  public void setSSN(String newSSN) {
+    if(newSSN == null || newSSN == "") {
+      throw new IllegalArgumentException("Must ender valid SSN number");
+    }
+    String oldSSN = this.ssn;
+    this.ssn = newSSN;
+    pcs.firePropertyChange(new PropertyChangeEvent(this, "ssn", oldSSN, newSSN));
   }
 
-  public boolean getPropertyChangeFired() {
-    return propertyChangeFired;
+  public String getSSN() {
+    return this.ssn;
+  }
+
+  public String becomeJudge() {
+    return "The Honorable " + this.name;
+  }
+
+  public int timeWarp() {
+    return this.age + 10;
   }
 
   public double calculateBonus() {
-    return salary * 1.10;
+    return this.salary * 1.1;
   }
-  
-  public String becomeJudge() {
-    return "The Honorable " + name;
-  }
-  
-  public int timeWarp() {
-    return age + 10;
-  }
+
   
   @Override
   public String toString() {
     return "[Person name:" + this.name + " age:" + this.age + " salary:" + this.salary + "]";
   }
 
-  public static class AgeComparator implements Comparator<Person> {
-    public int compare(Person p1, Person p2) {
-      return p1.age - p2.age;
-    }
-  }
-
   @Override
   public int compareTo(Person other) {
-    if(this.salary > other.salary) {
+    if(this.salary < other.salary) {
       return -1;
-    } else if(this.salary < other.salary) {
+    } else if(this.salary > other.salary) {
       return 1;
     }
     return 0;
@@ -109,13 +126,11 @@ public class Person implements Comparable<Person> {
   public boolean equals(Object other) {
     if (other instanceof Person) {
       Person p = (Person)other;
-      return p.name == this.name && p.age == this.age;
+      return p.name == this.name && p.age == this.age && p.salary == this.salary;
     }
     return false;
   }
 
-  // Creates the Neward Family
-  //
   public static List<Person> getNewardFamily() {
     List<Person> newards = new ArrayList<Person>();
     newards.add(new Person("Ted", 41, 250000));
@@ -123,16 +138,5 @@ public class Person implements Comparable<Person> {
     newards.add(new Person("Michael", 22, 10000));
     newards.add(new Person("Matthew", 15, 0));
     return newards;
-  }
-
-  // PropertyChangeListener support; you shouldn't need to change any of
-  // these two methods or the field
-  //
-  private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-  public void addPropertyChangeListener(PropertyChangeListener listener) {
-      this.pcs.addPropertyChangeListener(listener);
-  }
-  public void removePropertyChangeListener(PropertyChangeListener listener) {
-      this.pcs.removePropertyChangeListener(listener);
   }
 }
